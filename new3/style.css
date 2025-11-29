@@ -1,0 +1,140 @@
+/* 顶部通知栏 */
+.announcement-bar {
+    background-color: #1a1a1a;
+    /* 深黑色，像 Origins 的顶栏 */
+    color: #fff;
+    text-align: center;
+    padding: 8px 0;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 1px;
+}
+
+/* 调整导航栏位置，因为它不再是第一行了 */
+.navbar {
+    top: 35px;
+    /* 给通知栏留出空间 */
+    /* 其他 navbar 样式保持不变... */
+}
+
+/* 全局重置 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', sans-serif;
+}
+
+body {
+    background-color: #fdfbf7;
+    /* 暖米色背景 */
+    color: #1a1a1a;
+}
+
+/* 导航栏 */
+.navbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 5%;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(10px);
+    z-index: 100;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.logo {
+    font-weight: 800;
+    font-size: 1.5rem;
+    letter-spacing: -1px;
+}
+
+.nav-links {
+    list-style: none;
+    display: flex;
+    gap: 30px;
+}
+
+.nav-links a {
+    text-decoration: none;
+    color: #666;
+    font-weight: 500;
+}
+
+.nav-links a.active {
+    color: #000;
+    font-weight: 800;
+}
+
+/* 英雄区 */
+.hero {
+    height: 60vh;
+    /* 稍微调小一点，方便直接看到产品 */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: linear-gradient(to bottom, #fdfbf7, #fff);
+    padding-top: 60px;
+}
+
+.hero h1 {
+    font-size: 4rem;
+    line-height: 1;
+    margin-bottom: 10px;
+}
+
+/* 产品区域 */
+.products-section {
+    padding: 50px 5%;
+}
+
+.section-header {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.section-header h2 {
+    font-size: 2rem;
+}
+
+/* ⚠️ 关键布局：网格系统 */
+.product-grid {
+    display: grid;
+    /* 自动适应屏幕宽度，最窄 280px */
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 40px;
+    min-height: 200px;
+}
+
+/* 产品卡片样式 */
+.product-card {
+    background: #fff;
+    border-radius: 15px;
+    padding: 15px;
+    transition: transform 0.3s ease;
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+    cursor: pointer;
+}
+
+.product-card:hover {
+    transform: translateY(-10px);
+    /* 悬停上浮 */
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+}
+
+.product-card img {
+    background-color: #f5f5f5;
+    /* 防止图片加载失败是一片白 */
+}
+
+/* 页脚 */
+footer {
+    text-align: center;
+    padding: 50px;
+    color: #999;
+    font-size: 0.8rem;
+}

@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PALADO DASHBOARD</title>
+    <!-- 引入图表库和图标库 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Sharp" rel="stylesheet">
+    <style>
+        :root {
+            --color-primary: #7380ec;
+            --color-danger: #ff7782;
+            --color-success: #41f1b6;
+            --color-white: #fff;
+            --color-info-dark: #7d8da1;
+            --color-dark: #363949;
+            --color-light: rgba(132, 139, 200, 0.18);
+            --card-border-radius: 2rem;
+            --card-padding: 1.8rem;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #f6f6f9;
+            color: var(--color-dark);
+            margin: 0;
+            padding: 0;
+            display: flex;
+        }
+
+        /* 侧边栏 */
+        aside {
+            height: 100vh;
+            background: var(--color-white);
+            padding: 20px;
+            width: 250px;
+            position: fixed;
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+            box-shadow: 1px 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        aside h2 {
+            margin-bottom: 20px;
+            color: var(--color-dark);
+        }
+
+        aside a {
+            display: flex;
+            gap: 1rem;
+            color: var(--color-info-dark);
+            text-decoration: none;
+            padding: 1rem;
+            transition: 0.3s;
+            border-radius: 10px;
+        }
+
+        aside a:hover,
+        aside a.active {
+            background: var(--color-light);
+            color: var(--color-primary);
+        }
+
+        aside a span {
+            font-size: 1.6rem;
+        }
+
+        /* 主体内容 */
+        main {
+            margin-left: 270px;
+            padding: 2rem;
+            width: 100%;
+        }
+
+        /* 数据卡片 */
+        .insights {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.6rem;
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: var(--color-white);
+            padding: var(--card-padding);
+            border-radius: var(--card-border-radius);
+            box-shadow: 0 2rem 3rem var(--color-light);
+        }
+
+        .card h3 {
+            font-size: 1rem;
+            color: var(--color-dark);
+        }
+
+        .card h1 {
+            margin-top: 10px;
+        }
+
+        /* 布局网格 */
+        .grid-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+        }
+
+        /* 表格样式 */
+        .table-card {
+            background: var(--color-white);
+            border-radius: var(--card-border-radius);
+            padding: var(--card-padding);
+            box-shadow: 0 2rem 3rem var(--color-light);
+            margin-bottom: 2rem;
+        }
+
+        table {
+            width: 100%;
+            text-align: left;
+            border-collapse: collapse;
+        }
+
+        th {
+            padding-bottom: 1rem;
+            color: var(--color-dark);
+        }
+
+        td {
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--color-light);
+            color: var(--color-info-dark);
+        }
+
+        .status {
+            padding: 5px 10px;
+            border-radius: 15px;
+            color: #fff;
+            font-size: 0.8rem;
+        }
+
+        .status.Pending {
+            background: #ffbb55;
+        }
+
+        .status.Shipped {
+            background: var(--color-success);
+        }
+
+        /* 简单的上架表单 */
+        .add-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        input {
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: #fff;
+            padding: 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            grid-column: span 2;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- 左侧菜单 -->
+    <aside>
+        <h2>PALADO <span style="color:var(--color-danger)">ADMIN</span></h2>
+        <a href="#" class="active">
+            <span class="material-icons-sharp">grid_view</span>
+            <h3>仪表盘</h3>
+        </a>
+        <a href="#orders">
+            <span class="material-icons-sharp">receipt_long</span>
+            <h3>订单管理</h3>
+        </a>
+        <a href="#products">
+            <span class="material-icons-sharp">inventory</span>
+            <h3>库存管理</h3>
+        </a>
+        <a href="index.html">
+            <span class="material-icons-sharp">logout</span>
+            <h3>返回商城</h3>
+        </a>
+    </aside>
+
+    <!-- 右侧内容 -->
+    <main>
+        <h1>控制台概览</h1>
+
+        <!-- 1. 顶部数据卡片 -->
+        <div class="insights">
+            <div class="card">
+                <span class="material-icons-sharp"
+                    style="background:coral; color:#fff; padding:5px; border-radius:50%">analytics</span>
+                <h3>总销售额</h3>
+                <h1>$12,450</h1>
+            </div>
+            <div class="table-card" style="margin-bottom: 20px;">
+                <h2>📊 订单分析</h2>
+                <div style="height: 300px; display: flex; justify-content: center;">
+                    <canvas id="orderChart"></canvas>
+                </div>
+            </div>
+            <div class="card">
+                <span class="material-icons-sharp"
+                    style="background:lightgreen; color:#fff; padding:5px; border-radius:50%">shopping_cart</span>
+                <h3>总订单数</h3>
+                <h1 id="total-orders">0</h1>
+            </div>
+            <div class="card">
+                <span class="material-icons-sharp"
+                    style="background:skyblue; color:#fff; padding:5px; border-radius:50%">inventory</span>
+                <h3>在售商品</h3>
+                <h1 id="total-products">0</h1>
+            </div>
+        </div>
+
+        <div class="grid-container">
+            <!-- 2. 最近订单列表 -->
+            <div class="table-card">
+                <h2>最近订单</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>顾客</th>
+                            <th>购买商品</th>
+                            <th>金额</th>
+                            <th>状态</th>
+                        </tr>
+                    </thead>
+                    <tbody id="order-list">
+                        <!-- JS 填充 -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 3. 上架新产品 (简单版) -->
+            <div class="table-card">
+                <h2>快速上架</h2>
+                <div class="add-form">
+                    <input type="text" id="p-name" placeholder="产品名称">
+                    <input type="number" id="p-price" placeholder="价格">
+                    <input type="text" id="p-img" placeholder="图片URL" style="grid-column: span 2">
+                    <button class="btn-primary" onclick="addProduct()">立即发布</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. 产品列表 -->
+        <div class="table-card">
+            <h2>库存列表</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>图片</th>
+                        <th>名称</th>
+                        <th>价格</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+                <tbody id="product-list"></tbody>
+            </table>
+        </div>
+    </main>
+
+    <script>
+        // 简易令牌检查
+        const token = localStorage.getItem('admin_token');
+        if (!token) {
+            alert("您未登录，请先登录！");
+            window.location.href = "login.html";
+        }
+        const SECRET_KEY = "palado_admin_888"; // 你自己设定的密码
+        const userKey = localStorage.gj_token;
+
+        if (userKey !== SECRET_KEY) {
+            const input = prompt("请输入管理员密钥：");
+            if (input === SECRET_KEY) {
+                localStorage.gj_token = input;
+            } else {
+                alert("无权访问！");
+                window.location.href = "index.html"; // 踢回首页
+            }
+        }
+        const API_URL = 'https://palado-api.onrender.com/api';
+
+        // 初始化加载
+        async function init() {
+            fetchOrders();
+            fetchProducts();
+        }
+
+        // 获取订单
+        async function fetchOrders() {
+            const res = await fetch(`${API_URL}/orders`, {
+                headers: { 'Authorization': token } // 👈 加上这行
+            });
+            if (res.status === 401) window.location.href = "login.html"; // Token 过期踢出去
+            const orders = await res.json();
+
+            document.getElementById('total-orders').innerText = orders.length;
+
+            const html = orders.map(order => `
+                <tr>
+                    <td>${order.customerName}</td>
+                    <td>${order.product}</td>
+                    <td>$${order.amount}</td>
+                    <td><span class="status ${order.status}">${order.status}</span></td>
+                </tr>
+            `).join('');
+            document.getElementById('order-list').innerHTML = html;
+            // ================= 新增：渲染图表 =================
+            // 1. 统计数据：算出有多少个 Pending，多少个 Shipped
+            const pendingCount = orders.filter(o => o.status === 'Pending').length;
+            const shippedCount = orders.filter(o => o.status === 'Shipped').length;
+
+            // 2. 销毁旧图表 (防止刷新时重叠)
+            if (window.myChart) window.myChart.destroy();
+
+            // 3. 画新图
+            const ctx = document.getElementById('orderChart').getContext('2d');
+            window.myChart = new Chart(ctx, {
+                type: 'doughnut', // 甜甜圈图
+                data: {
+                    labels: ['待处理 (Pending)', '已发货 (Shipped)'],
+                    datasets: [{
+                        data: [pendingCount, shippedCount],
+                        backgroundColor: ['#ffbb55', '#41f1b6'], // 黄色和绿色
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: { position: 'bottom' }
+                    }
+                }
+            });
+        }
+
+        // 获取产品
+        async function fetchProducts() {
+            const res = await fetch(`${API_URL}/products`, {
+                headers: { 'Authorization': token } // 👈 加上这行
+            });
+            if (res.status === 401) window.location.href = "login.html"; // Token 过期踢出去
+            const products = await res.json();
+
+            document.getElementById('total-products').innerText = products.length;
+
+            const html = products.map(p => `
+                <tr>
+                    <td><img src="${p.img}" style="width:40px;height:40px;border-radius:5px;object-fit:cover"></td>
+                    <td>${p.name}</td>
+                    <td>$${p.price}</td>
+                    <td style="color:red;cursor:pointer" onclick="deleteProduct('${p._id}')">下架</td>
+                </tr>
+            `).join('');
+            document.getElementById('product-list').innerHTML = html;
+        }
+
+        // 上架产品
+        async function addProduct() {
+            const name = document.getElementById('p-name').value;
+            const price = document.getElementById('p-price').value;
+            const img = document.getElementById('p-img').value;
+
+            await fetch(`${API_URL}/products`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, price, img })
+            });
+            alert("上架成功！");
+            fetchProducts();
+        }
+
+        // 下架产品
+        async function deleteProduct(id) {
+            if (!confirm("确定下架？")) return;
+            await fetch(`${API_URL}/products/${id}`, { method: 'DELETE' });
+            fetchProducts();
+        }
+
+        init();
+    </script>
+</body>
+
+</html>

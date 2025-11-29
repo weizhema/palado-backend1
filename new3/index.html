@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PALADO | 未来履程</title>
+    <!-- 引入漂亮的字体 -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <!-- 引入 Stripe 官方 JS 库 -->
+    <script src="https://js.stripe.com/v3/"></script>
+    <!-- ==================== 这里是 CSS 样式区域 ==================== -->
+    <style>
+        /* 全局重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: #fdfbf7;
+            /* 暖米色背景 */
+            color: #1a1a1a;
+        }
+
+        /* 导航栏 */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 5%;
+            position: fixed;
+            width: 100%;
+            top: 0;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            z-index: 100;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+
+        .logo {
+            font-weight: 800;
+            font-size: 1.5rem;
+            letter-spacing: -1px;
+        }
+
+        .nav-links {
+            list-style: none;
+            display: flex;
+            gap: 30px;
+        }
+
+
+        .nav-links a {
+            text-decoration: none;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .nav-links a.active {
+            color: #000;
+            font-weight: 800;
+        }
+
+        .nav-right {
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        /* ... 原有的 .nav-links ... */
+
+        /* 新增：搜索框样式 */
+        .search-box {
+            display: flex;
+            align-items: center;
+            background: #f5f5f5;
+            padding: 5px 15px;
+            border-radius: 20px;
+            margin-right: 20px;
+        }
+
+        .search-box input {
+            border: none;
+            background: transparent;
+            outline: none;
+            font-size: 0.9rem;
+            width: 150px;
+        }
+
+        .search-box i {
+            color: #999;
+        }
+
+        /* 给分类按钮加个鼠标样式，让人知道能点 */
+        .nav-links li a {
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        /* 英雄区 */
+        .hero {
+            height: 60vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            background: linear-gradient(to bottom, #fdfbf7, #fff);
+            padding-top: 60px;
+        }
+
+        .hero h1 {
+            font-size: 4rem;
+            line-height: 1.1;
+            margin-bottom: 15px;
+        }
+
+        .hero p {
+            font-size: 1.2rem;
+            color: #666;
+        }
+
+        /* 产品区域 */
+        .products-section {
+            padding: 50px 5%;
+            min-height: 500px;
+            /* 保证没数据时也有高度 */
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .section-header h2 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+
+        /* ⚠️ 关键布局：网格系统 */
+        .product-grid {
+            display: grid;
+            /* 自动适应屏幕宽度，最窄 280px */
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 40px;
+            min-height: 200px;
+        }
+
+        /* 产品卡片样式 */
+        .product-card {
+            background: #fff;
+            border-radius: 15px;
+            padding: 15px;
+            transition: transform 0.3s ease;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .product-card:hover {
+            transform: translateY(-10px);
+            /* 悬停上浮 */
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .product-card img {
+            background-color: #f5f5f5;
+            /* 防止图片加载失败是一片白 */
+        }
+
+        /* 页脚 */
+        footer {
+            text-align: center;
+            padding: 50px;
+            color: #999;
+            font-size: 0.8rem;
+            border-top: 1px solid #eee;
+            margin-top: 50px;
+        }
+
+        /* ============ 购物车样式 ============ */
+        /* 侧边栏主体 */
+        .cart-sidebar {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            /* 默认藏在屏幕右边外面 */
+            width: 350px;
+            height: 100%;
+            background: white;
+            box-shadow: -5px 0 15px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            transition: right 0.3s ease;
+            /* 顺滑动画 */
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 激活状态：滑出来 */
+        .cart-sidebar.open {
+            right: 0;
+        }
+
+        .cart-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .cart-items {
+            flex: 1;
+            /* 占据中间所有空间 */
+            overflow-y: auto;
+            /* 内容多了可以滚动 */
+            padding: 20px;
+        }
+
+        /* 购物车里的每一个小商品 */
+        .cart-item {
+            display: flex;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #f5f5f5;
+            padding-bottom: 10px;
+        }
+
+        .cart-item img {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 5px;
+            margin-right: 10px;
+        }
+
+        .cart-item-info {
+            flex: 1;
+        }
+
+        .cart-remove {
+            color: #ff4444;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+
+        .cart-footer {
+            padding: 20px;
+            border-top: 1px solid #eee;
+            background: #fafafa;
+        }
+
+        .total-price {
+            display: flex;
+            justify-content: space-between;
+            font-weight: 800;
+            font-size: 1.2rem;
+            margin-bottom: 15px;
+        }
+
+        .checkout-btn {
+            width: 100%;
+            padding: 15px;
+            background: #000;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 2rem;
+            cursor: pointer;
+        }
+
+        /* 遮罩层 */
+        .cart-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            display: none;
+            /* 默认不显示 */
+        }
+
+        .cart-overlay.open {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 1. 顶部通知栏 -->
+    <div class="announcement-bar">
+        <p>🎉 新人首单立减 $20 | 全场满 $150 免运费 🚚</p>
+    </div>
+    <!-- 1. 导航栏 -->
+    <nav class="navbar">
+        <div class="logo">PALADO.</div>
+
+        <!-- 搜索框 -->
+        <div class="search-box">
+            <span style="margin-right:5px">🔍</span>
+            <input type="text" id="search-input" placeholder="搜索鞋款..." oninput="handleSearch()">
+        </div>
+
+        <ul class="nav-links">
+            <!-- 注意：onclick 里面调用了 filterProducts 函数 -->
+            <li><a onclick="filterProducts('all')" class="active" id="btn-all">全部</a></li>
+            <li><a onclick="filterProducts('running')" id="btn-running">跑步</a></li>
+            <li><a onclick="filterProducts('casual')" id="btn-casual">休闲</a></li>
+        </ul>
+
+        <div class="nav-right">
+            <span>CART (0)</span>
+        </div>
+    </nav>
+
+    <!-- 2. 英雄海报区 -->
+    <header class="hero">
+        <div class="hero-content">
+            <h1>重塑<br>你的步伐</h1>
+            <p>Design for movement. Engineered for speed.</p>
+        </div>
+    </header>
+
+    <!-- 3. 产品展示区 (关键区域) -->
+    <section class="products-section">
+        <div class="section-header">
+            <h2>精选系列</h2>
+            <p>2025 春季新款</p>
+        </div>
+
+        <!-- ⚠️ 关键点：这个 ID 必须叫 product-grid，JS 才能找到它 -->
+        <div id="product-grid" class="product-grid">
+            <!-- 正在加载时的占位符 -->
+            <div style="grid-column: 1/-1; text-align: center; padding: 50px; color: #999;">
+                <p>⏳ 正在呼叫后端仓库...</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 4. 页脚 -->
+    <footer>
+        <p>© 2025 PALADO SHOES.</p>
+    </footer>
+
+    <!-- 🛒 购物车侧边栏 (默认隐藏) -->
+    <div id="cart-sidebar" class="cart-sidebar">
+        <div class="cart-header">
+            <h2>你的购物车</h2>
+            <button onclick="toggleCart()" class="close-btn">&times;</button>
+        </div>
+
+        <!-- 购物车里的列表 -->
+        <div id="cart-items" class="cart-items">
+            <!-- JS 会把商品塞到这里 -->
+            <p style="text-align:center; color:#999; margin-top:50px;">购物车是空的</p>
+        </div>
+
+        <div class="cart-footer">
+            <div class="total-price">
+                <span>总计:</span>
+                <span id="cart-total">$0</span>
+            </div>
+
+            <!-- 新增：直接显示表单，不再弹 prompt -->
+            <div id="checkout-form" style="margin-top: 15px;">
+                <input type="text" id="cust-name" placeholder="您的姓名"
+                    style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd; border-radius:5px;">
+                <input type="text" id="cust-addr" placeholder="收货地址"
+                    style="width:100%; padding:10px; margin-bottom:10px; border:1px solid #ddd; border-radius:5px;">
+                <button class="checkout-btn" onclick="submitOrder()">💳 立即支付</button>
+            </div>
+        </div>
+    </div>
+    <!-- 遮罩层 (点背景关闭购物车) -->
+    <div id="cart-overlay" class="cart-overlay" onclick="toggleCart()"></div>
+    <!-- ==================== 这里是 JS 逻辑区域 ==================== -->
+    <script>
+        // =================配置区域=================
+        // 在 script 顶部定义
+        // const BASE_URL = 'http://localhost:5000'; // 本地开发用这个
+        const BASE_URL = 'https://palado-api.onrender.com'; // 上线用这个
+
+        const API_URL = `${BASE_URL}/api/products`;
+        const ORDER_URL = `${BASE_URL}/api/orders`;
+
+        const productGrid = document.getElementById('product-grid');
+        let cart = JSON.parse(localStorage.getItem('myCart')) || [];
+
+        // 🌟 新增：全局变量，用来存“所有鞋子”的原始数据
+        let allProductsData = [];
+
+        // ================= 1. 启动逻辑 =================
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchProducts();
+            checkPaymentStatus();
+            updateCartUI();
+        });
+        // 新增函数：检查 URL 参数
+        function checkPaymentStatus() {
+            const urlParams = new URLSearchParams(window.location.search);
+
+            if (urlParams.get('status') === 'success') {
+                // 1. 弹窗庆祝
+                alert("🎉 支付成功！感谢您的购买！我们会尽快发货。");
+
+                // 2. 清空购物车
+                cart = [];
+                localStorage.removeItem('myCart');
+
+                // 3. 清理掉 URL 里的 ?status=success，让地址栏变干净 (可选)
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+            else if (urlParams.get('status') === 'cancel') {
+                alert("qaq 您取消了支付，商品还在购物车里等着您哦！");
+            }
+        }
+        // ================= 2. 获取数据 (稍微改一点点) =================
+        async function fetchProducts() {
+            try {
+                const response = await fetch(API_URL);
+                if (!response.ok) throw new Error("连接后端失败");
+
+                // 拿到数据
+                const products = await response.json();
+
+                // 🌟 关键动作：把数据存进“总账本”
+                allProductsData = products;
+
+                // 一开始显示所有产品
+                renderProducts(products);
+
+            } catch (error) {
+                console.error(error);
+                productGrid.innerHTML = `<p style="text-align:center;">⚠️ 数据加载失败</p>`;
+            }
+        }
+
+        // ================= 🌟 新增：筛选与搜索功能 =================
+
+        // A. 按分类筛选 (点导航栏按钮时触发)
+        function filterProducts(category) {
+            // 1. 切换按钮的“加粗”状态 (视觉效果)
+            document.querySelectorAll('.nav-links a').forEach(el => el.classList.remove('active'));
+            document.getElementById(`btn-${category}`).classList.add('active');
+
+            // 2. 筛选数据
+            if (category === 'all') {
+                // 如果选全部，就给所有数据
+                renderProducts(allProductsData);
+            } else {
+                // 否则，只留下 category 等于 目标分类 的鞋子
+                const filtered = allProductsData.filter(item => item.category === category);
+                renderProducts(filtered);
+            }
+        }
+
+        // B. 搜索功能 (输入文字时触发)
+        function handleSearch() {
+            const keyword = document.getElementById('search-input').value.toLowerCase(); // 转小写，不区分大小写
+
+            // 在名字里找关键词
+            const searched = allProductsData.filter(item =>
+                item.name.toLowerCase().includes(keyword)
+            );
+
+            renderProducts(searched);
+        }
+
+        // ================= 3. 渲染商品 =================
+        function renderProducts(products) {
+            productGrid.innerHTML = '';
+            products.forEach(product => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                // 注意：下面的 button onclick 事件变了
+                // 我们把整个 product 对象变成了字符串传进去，方便读取
+                const productStr = JSON.stringify(product).replace(/"/g, '&quot;');
+
+                card.innerHTML = `
+                    <div style="background:#eee; border-radius:10px; overflow:hidden; height:250px;">
+                        <img src="${product.img}" alt="${product.name}" style="width:100%; height:100%; object-fit:cover;">
+                    </div>
+                    <div style="padding:15px 0; display:flex; justify-content:space-between; align-items:center;">
+                        <h3 style="font-size:1.1rem; margin:0; font-weight:700;">${product.name}</h3>
+                        <span style="color:#3b5bdb; font-weight:bold; font-size:1.2rem;">$${product.price}</span>
+                    </div>
+                    <button onclick="addToCart('${product._id}')">加入购物车</button>
+                    
+                    加入购物车
+                    </button>
+                `;
+                productGrid.appendChild(card);
+            });
+        }
+
+        // ================= 4. 🛒 购物车核心逻辑 (重点！) =================
+
+        // A. 添加到购物车
+        function addToCart(id) {
+            // 在总数据里找到这个商品
+            const targetProduct = allProductsData.find(item => item._id === id);
+            if (targetProduct) {
+                cart.push(targetProduct);
+                saveCart();
+                updateCartUI();
+                toggleCart();
+            }
+        }
+
+        // B. 从购物车移除 (根据索引 index)
+        function removeFromCart(index) {
+            cart.splice(index, 1); // 删掉第几个
+            saveCart();
+            updateCartUI();
+        }
+
+        // C. 保存数据 (持久化)
+        function saveCart() {
+            // localStorage 只能存字符串，所以要 JSON.stringify
+            localStorage.setItem('myCart', JSON.stringify(cart));
+        }
+
+        // D. 更新界面 (画出侧边栏的内容)
+        function updateCartUI() {
+            // 1. 更新右上角的数字
+            const navRight = document.querySelector('.nav-right span');
+            navRight.innerText = `CART (${cart.length})`;
+            // 给文字加个点击事件，点它也能打开购物车
+            navRight.style.cursor = 'pointer';
+            navRight.onclick = toggleCart;
+
+            // 2. 更新侧边栏里的列表
+            const cartItemsContainer = document.getElementById('cart-items');
+            const cartTotalElement = document.getElementById('cart-total');
+
+            cartItemsContainer.innerHTML = ''; // 先清空
+            let totalPrice = 0;
+
+            if (cart.length === 0) {
+                cartItemsContainer.innerHTML = '<p style="text-align:center; color:#999; margin-top:20px;">空空如也...</p>';
+            } else {
+                cart.forEach((item, index) => {
+                    totalPrice += item.price; // 累加价格
+                    cartItemsContainer.innerHTML += `
+                        <div class="cart-item">
+                            <img src="${item.img}">
+                            <div class="cart-item-info">
+                                <h4>${item.name}</h4>
+                                <div>$${item.price}</div>
+                            </div>
+                            <div class="cart-remove" onclick="removeFromCart(${index})">删除</div>
+                        </div>
+                    `;
+                });
+            }
+
+            // 3. 更新总价
+            cartTotalElement.innerText = '$' + totalPrice;
+        }
+
+        // E. 开关侧边栏动画
+        function toggleCart() {
+            const sidebar = document.getElementById('cart-sidebar');
+            const overlay = document.getElementById('cart-overlay');
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('open');
+        }
+        // ================= 5. 💳 Stripe 支付功能 (新版) =================
+
+        // 1. 初始化 Stripe (使用刚才你发的公钥)
+        const stripe = Stripe('pk_test_51SYdsIQr6341tjDEOCmUjmguA4yTzcOIfcaR0x7Ohya7HFRjV0lsuLHJJeOVUV6pMpdnMo5tTNR0ACUAvi75LqUN009LfHTz2w');
+
+        async function submitOrder() {
+            if (cart.length === 0) return alert("购物车是空的，无法结账！");
+
+            // 给用户一个反馈，防止重复点击
+            const checkoutBtn = document.querySelector('.checkout-btn');
+            checkoutBtn.innerText = "⏳ 正在跳转支付...";
+            checkoutBtn.disabled = true;
+
+            try {
+                // 2. 请求后端创建一个“支付会话”
+                // 注意：如果你是在本地测试，确保 API_URL 指向 http://localhost:5000/api/products 的那个前缀
+                // 这里我们要访问 /create-checkout-session
+                const response = await fetch('http://localhost:5000/api/create-checkout-session', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ items: cart }) // 把购物车发给后端
+                });
+
+                const session = await response.json();
+
+                // 3. 如果后端报错了
+                if (session.error) {
+                    alert("创建支付失败: " + session.error);
+                    checkoutBtn.innerText = "💳 确认支付";
+                    checkoutBtn.disabled = false;
+                    return;
+                }
+
+                // 4. 后端返回 session.id 后，让 Stripe 帮我们跳转页面
+                const result = await stripe.redirectToCheckout({ sessionId: session.id });
+
+                if (result.error) {
+                    alert(result.error.message);
+                }
+
+            } catch (err) {
+                console.error("支付错误:", err);
+                alert("无法连接到支付服务器，请检查后端是否启动！");
+                checkoutBtn.innerText = "💳 确认支付";
+                checkoutBtn.disabled = false;
+            }
+        }
+    </script>
+
+</body>
+
+</html>
