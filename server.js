@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const jwt = require('jsonwebtoken');   // 🔐 新零件：用来发令牌
 const bcrypt = require('bcryptjs');    // 🔐 新零件：用来加密密码
-
+const nodemailer = require('nodemailer'); // 📧 引入邮递员
 // ⚠️ 请把这里的 Stripe Key 换成你自己的 Secret Key (sk_test_...)
 const stripe = require('stripe')('sk_test_51SYdsIQr6341tjDEH6JwkKOiHprc8FSuRn8PyK2Ey6PJvM6C1ouOFXS0bzUAzyyfzCvkiMa0cC1glV9f6KanPJOp002foiGzlx');
 
@@ -23,6 +23,15 @@ const SECRET_KEY = "palado_super_secret_key_888";
 mongoose.connect(process.env.MONGO_URI)
     .then(() => console.log("✅ 数据库连接成功"))
     .catch(err => console.error("❌ 数据库错误:", err));
+// ================= 📧 邮件服务配置 =================
+// ⚠️ 请把下面的 user 和 pass 换成你自己的
+const transporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+        user: 'maweizhe123@gmail.com', // 👈 你的真实 Gmail
+        pass: 'awla fcol wqxx cajj '    // 👈 刚才那 16 位应用专用密码 (不要有空格)
+    }
+});
 
 // ================= 安全系统 (Security) =================
 
@@ -119,12 +128,54 @@ app.get('/api/orders', authMiddleware, async (req, res) => {
     }
 });
 
-// 5. 提交订单 (公开 - 顾客用的，不用登录)
+// 5. 提交订单 (升级版：带邮件通知)
 app.post('/api/orders', async (req, res) => {
     try {
+        // 1. 先保存订单到数据库
         const newOrder = new Order(req.body);
         await newOrder.save();
-        res.status(201).json({ message: "订单成功!", orderId: newOrder._id });
+
+        // 2. 准备邮件内容 (HTML 格式)
+        // 计算一下总价
+        const total = req.body.totalPrice;
+        const customerName = req.body.customerName || "尊贵的顾客";
+
+        // 生成商品列表的 HTML
+        const itemsHtml = req.body.items.map(item =>
+            `<li>${item.name} - $${item.price}</li>`
+        ).join('');
+
+        const mailOptions = {
+            from: '"PALADO 履程" <maweizhe123@gmail.com>', // 发件人
+            to: '502688727@qq.com', // ⚠️ 测试阶段，先发给自己看！以后可以改成 req.body.email
+            subject: `🎉 订单确认！谢谢你，${customerName}`, // 邮件标题
+            html: `
+                <div style="font-family: sans-serif; padding: 20px; color: #333;">
+                    <h1 style="color: #7380ec;">PALADO</h1>
+                    <h2>👋 收到你的订单啦！</h2>
+                    <p>${customerName}，我们的仓库正在为你打包。</p>
+                    <hr style="border:0; border-top:1px solid #eee;">
+                    <h3>🧾 订单详情</h3>
+                    <ul>${itemsHtml}</ul>
+                    <p style="font-weight:bold; font-size:1.2rem;">总计: $${total}</p>
+                    <hr style="border:0; border-top:1px solid #eee;">
+                    <p style="color:#999; font-size:0.8rem;">如果这不是你购买的，请忽略此邮件。</p>
+                </div>
+            `
+        };
+
+        // 3. 发送邮件
+        transporter.sendMail(mailOptions, (error, info) => {
+            if (error) {
+                console.log("❌ 邮件发送失败:", error);
+                // 注意：即使邮件失败，订单也是成功的，所以不报错给前端
+            } else {
+                console.log('✅ 邮件已发送:', info.response);
+            }
+        });
+
+        res.status(201).json({ message: "订单成功且邮件已发送!", orderId: newOrder._id });
+
     } catch (err) {
         res.status(400).json({ error: err.message });
     }
