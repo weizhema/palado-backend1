@@ -29,8 +29,8 @@ mongoose.connect(process.env.MONGO_URI)
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-        user: '你的谷歌邮箱@gmail.com', // 👈 替换这里
-        pass: 'xxxx xxxx xxxx xxxx'    // 👈 替换这里 (不要有空格)
+        user: 'maweizhe123@gmail.com', // 👈 替换这里
+        pass: 'awlafcolwqxxcajj'    // 👈 替换这里 (不要有空格)
     }
 });
 
@@ -115,6 +115,7 @@ app.get('/api/orders', authMiddleware, async (req, res) => {
 
 // ================= 📧 3. 提交订单 (升级版) =================
 app.post('/api/orders', async (req, res) => {
+    console.log("🔔 叮咚！有人敲门，收到了订单请求！");
     try {
         // A. 保存订单
         const newOrder = new Order(req.body);
@@ -122,21 +123,27 @@ app.post('/api/orders', async (req, res) => {
 
         // B. 发送邮件逻辑
         const customerName = req.body.customerName || "顾客";
+        // ✨ 新增：获取前端传来的 email
+        // 如果前端没传，就发给老板(你自己)做保底
+        const customerEmail = req.body.email || '你的测试接收邮箱@qq.com';
+
         const itemsHtml = req.body.items ? req.body.items.map(item => `<li>${item.name} - $${item.price}</li>`).join('') : "<li>商品详情见官网</li>";
 
         const mailOptions = {
-            from: '"PALADO 履程" <你的谷歌邮箱@gmail.com>', // 👈 这里的邮箱要和上面 transporter 里的一致
-            to: '你的测试接收邮箱@qq.com', // 👈 先发给自己测试一下
+            from: '"PALADO 履程" <你的谷歌邮箱@gmail.com>',
+            to: customerEmail, // 👈 🎯 关键修改！这里不再是死值，而是活的！
             subject: `🎉 订单确认！谢谢你，${customerName}`,
             html: `
                 <div style="font-family: sans-serif; padding: 20px; color: #333;">
                     <h1 style="color: #7380ec;">PALADO</h1>
                     <h2>👋 收到你的订单啦！</h2>
-                    <p>${customerName}，我们的仓库正在为你打包。</p>
+                    <p>亲爱的 <strong>${customerName}</strong>，</p>
+                    <p>感谢您的信任！这封邮件已发送至：${customerEmail}</p>
                     <hr>
-                    <h3>🧾 购物清单</h3>
+                    <h3>🧾 您的购物清单</h3>
                     <ul>${itemsHtml}</ul>
-                    <p>总价: $${req.body.totalPrice}</p>
+                    <p style="font-size:1.2rem; font-weight:bold;">总价: $${req.body.totalPrice}</p>
+                    <p style="color:#999; margin-top:30px;">我们正在火速备货，请留意发货通知！🚚</p>
                 </div>
             `
         };
